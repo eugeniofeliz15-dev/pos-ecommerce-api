@@ -1,40 +1,49 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule } from '@nestjs/config';
-import Joi from 'joi';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
 import { PrismaModule } from './prisma/prisma.module';
 import { AuthModule } from './auth/auth.module';
 import { UsersModule } from './users/users.module';
-import { CategoriesModule } from './categories/categories.module';
 import { ProductsModule } from './products/products.module';
 import { SalesModule } from './sales/sales.module';
-import { CartModule } from './cart/cart.module';
 import { OrdersModule } from './orders/orders.module';
+import { CartModule } from './cart/cart.module';
 import { CashRegisterModule } from './cash-register/cash-register.module';
+import { CommonModule } from './common/common.module';
+import { validationSchema } from './env.validation';
 
 @Module({
   imports: [
-    // Validación de variables de entorno
+    // 1. Validación de .env con Joi
     ConfigModule.forRoot({
       isGlobal: true,
-      validationSchema: Joi.object({
-        DATABASE_URL: Joi.string().required(),
-        JWT_SECRET: Joi.string().min(10).required(),
-        PORT: Joi.number().default(3000),
-      }),
+      validationSchema: validationSchema,
     }),
+
+    // 2. Rate Limiting: Máximo 60 peticiones cada 60 segundos por IP
+    ThrottlerModule.forRoot([{
+      ttl: 60000,
+      limit: 60,
+    }]),
+
+    // Módulos de la aplicación
     PrismaModule,
     AuthModule,
     UsersModule,
-    CategoriesModule,
     ProductsModule,
     SalesModule,
-    CartModule,
     OrdersModule,
+    CartModule,
     CashRegisterModule,
+    CommonModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
+  providers: [
+    // 3. Aplicar el Rate Limiting globalmente
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
 })
 export class AppModule {}

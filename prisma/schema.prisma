@@ -44,6 +44,7 @@ model User {
   phone               String?
   createdAt           DateTime       @default(now())
   updatedAt           DateTime       @updatedAt
+  deletedAt           DateTime?      // <-- NUEVO CAMPO
 
   addresses           Address[]
   sales               Sale[]
@@ -72,9 +73,10 @@ model Address {
 }
 
 model Category {
-  id          Int       @id @default(autoincrement())
-  name        String    @unique
+  id          Int        @id @default(autoincrement())
+  name        String     @unique
   description String?
+  deletedAt   DateTime?  // <-- NUEVO CAMPO
   products    Product[]
 
   @@map("categories")
@@ -88,6 +90,7 @@ model Product {
   salePrice   Float
   stock       Int        @default(0)
   categoryId  Int
+  deletedAt   DateTime?  // <-- NUEVO CAMPO
 
   category    Category   @relation(fields: [categoryId], references: [id])
   saleItems   SaleItem[]

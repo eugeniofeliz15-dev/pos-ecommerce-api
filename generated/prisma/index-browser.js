@@ -131,7 +131,8 @@ exports.Prisma.UserScalarFieldEnum = {
   lastName: 'lastName',
   phone: 'phone',
   createdAt: 'createdAt',
-  updatedAt: 'updatedAt'
+  updatedAt: 'updatedAt',
+  deletedAt: 'deletedAt'
 };
 
 exports.Prisma.AddressScalarFieldEnum = {
@@ -148,7 +149,8 @@ exports.Prisma.AddressScalarFieldEnum = {
 exports.Prisma.CategoryScalarFieldEnum = {
   id: 'id',
   name: 'name',
-  description: 'description'
+  description: 'description',
+  deletedAt: 'deletedAt'
 };
 
 exports.Prisma.ProductScalarFieldEnum = {
@@ -158,7 +160,8 @@ exports.Prisma.ProductScalarFieldEnum = {
   costPrice: 'costPrice',
   salePrice: 'salePrice',
   stock: 'stock',
-  categoryId: 'categoryId'
+  categoryId: 'categoryId',
+  deletedAt: 'deletedAt'
 };
 
 exports.Prisma.SaleScalarFieldEnum = {

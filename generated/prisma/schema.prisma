@@ -35,15 +35,16 @@ enum CashRegisterStatus {
 }
 
 model User {
-  id        Int      @id @default(autoincrement())
-  email     String   @unique
+  id        Int       @id @default(autoincrement())
+  email     String    @unique
   password  String
-  role      Role     @default(CLIENTE)
+  role      Role      @default(CLIENTE)
   firstName String?
   lastName  String?
   phone     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime? // <-- NUEVO CAMPO
 
   addresses           Address[]
   sales               Sale[]
@@ -75,19 +76,21 @@ model Category {
   id          Int       @id @default(autoincrement())
   name        String    @unique
   description String?
+  deletedAt   DateTime? // <-- NUEVO CAMPO
   products    Product[]
 
   @@map("categories")
 }
 
 model Product {
-  id          Int     @id @default(autoincrement())
+  id          Int       @id @default(autoincrement())
   name        String
   description String?
   costPrice   Float
   salePrice   Float
-  stock       Int     @default(0)
+  stock       Int       @default(0)
   categoryId  Int
+  deletedAt   DateTime? // <-- NUEVO CAMPO
 
   category   Category    @relation(fields: [categoryId], references: [id])
   saleItems  SaleItem[]

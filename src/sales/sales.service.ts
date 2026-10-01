@@ -1,18 +1,17 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateSaleDto } from './dto/create-sale.dto';
+import { PaginationDto } from '../common/pagination.dto';
 
 @Injectable()
 export class SalesService {
   constructor(private prisma: PrismaService) {}
 
   async create(createSaleDto: CreateSaleDto, cashierId: number) {
-    // Usamos una transacción interactiva para garantizar atomicidad
     return this.prisma.$transaction(async (tx) => {
       let totalAmount = 0;
       const saleItemsData = [];
 
-      // 1. Validar stock y calcular totales
       for (const item of createSaleDto.items) {
         const product = await tx.product.findUnique({ where: { id: item.productId } });
         
@@ -32,12 +31,11 @@ export class SalesService {
         saleItemsData.push({
           productId: item.productId,
           quantity: item.quantity,
-          unitPrice: product.salePrice, // Guardamos el precio histórico
+          unitPrice: product.salePrice,
           subtotal: subtotal,
         });
       }
 
-      // 2. Crear la Venta y sus Detalles
       const sale = await tx.sale.create({
         data: {
           cashierId,
@@ -57,7 +55,6 @@ export class SalesService {
         },
       });
 
-      // 3. Descontar el Stock de cada producto
       for (const item of createSaleDto.items) {
         await tx.product.update({
           where: { id: item.productId },
@@ -69,8 +66,10 @@ export class SalesService {
     });
   }
 
-  async findAll(date?: string) {
-    // Filtro opcional por día (formato YYYY-MM-DD)
+  async findAll(paginationDto: PaginationDto, date?: string) {
+    const { page = 1, limit = 10 } = paginationDto;
+    const skip = (page - 1) * limit;
+
     const where: any = {};
     if (date) {
       const startDate = new Date(date);
@@ -83,13 +82,28 @@ export class SalesService {
       };
     }
 
-    return this.prisma.sale.findMany({
-      where,
-      include: {
-        items: { include: { product: true } },
-        cashier: { select: { firstName: true, lastName: true, email: true } },
+    const [data, total] = await Promise.all([
+      this.prisma.sale.findMany({
+        where,
+        skip,
+        take: limit,
+        include: {
+          items: { include: { product: true } },
+          cashier: { select: { firstName: true, lastName: true, email: true } },
+        },
+        orderBy: { createdAt: 'desc' },
+      }),
+      this.prisma.sale.count({ where }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-      orderBy: { createdAt: 'desc' },
-    });
+    };
   }
 }

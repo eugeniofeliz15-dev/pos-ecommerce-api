@@ -1,14 +1,17 @@
 import { Injectable, BadRequestException, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
-import { CreateOrderDto } from './dto/create-order.dto';
+import { CreateOrderDto, PaymentMethodOrder } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
+import { MockPayService } from '../common/mockpay/mockpay.service';
 
 @Injectable()
 export class OrdersService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private mockPayService: MockPayService,
+  ) {}
 
   async checkout(customerId: number, createOrderDto: CreateOrderDto) {
-    // 1. Obtener el carrito del cliente
     const cart = await this.prisma.cart.findUnique({
       where: { customerId },
       include: { items: { include: { product: true } } },
@@ -18,12 +21,10 @@ export class OrdersService {
       throw new BadRequestException('El carrito está vacío');
     }
 
-    // 2. Transacción atómica: Crear pedido, descontar stock, vaciar carrito
-    return this.prisma.$transaction(async (tx) => {
+    const order = await this.prisma.$transaction(async (tx) => {
       let totalAmount = 0;
       const orderItemsData = [];
 
-      // Validar stock y calcular total
       for (const item of cart.items) {
         if (item.product.stock < item.quantity) {
           throw new BadRequestException(
@@ -42,14 +43,13 @@ export class OrdersService {
         });
       }
 
-      // Crear la Orden
-      const order = await tx.order.create({
+      const newOrder = await tx.order.create({
         data: {
           customerId,
           addressId: createOrderDto.addressId,
           totalAmount,
           notes: createOrderDto.notes,
-          status: 'PENDIENTE', // Estado inicial
+          status: 'PENDIENTE',
           items: { create: orderItemsData },
         },
         include: {
@@ -58,7 +58,6 @@ export class OrdersService {
         },
       });
 
-      // Descontar Stock
       for (const item of cart.items) {
         await tx.product.update({
           where: { id: item.productId },
@@ -66,11 +65,79 @@ export class OrdersService {
         });
       }
 
-      // Vaciar el carrito (borrar todos los items)
       await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
-
-      return order;
+      return newOrder;
     });
+
+    // Si el método de pago es MOCKPAY, generamos la URL de checkout
+    let checkoutUrl = null;
+    if (createOrderDto.paymentMethod === PaymentMethodOrder.MOCKPAY) {
+      checkoutUrl = await this.mockPayService.createPayment(
+        order.totalAmount,
+        `ORD-${order.id}`
+      );
+    }
+
+    return {
+      order,
+      checkout_url: checkoutUrl,
+    };
+  }
+
+  // ✅ MÉTODO CORREGIDO PARA COINCIDIR CON LA DOCUMENTACIÓN REAL DE MOCKPAY
+  async handlePaymentWebhook(webhookData: any) {
+    console.log('🔔 Webhook recibido de MockPay:', JSON.stringify(webhookData, null, 2));
+
+    // MockPay envía el order_id DENTRO de metadata
+    const orderIdStr = webhookData.metadata?.order_id?.replace('ORD-', '');
+    const orderId = parseInt(orderIdStr, 10);
+
+    if (!orderId || isNaN(orderId)) {
+      throw new BadRequestException('ID de orden inválido en el webhook');
+    }
+
+    // Verificar el evento o el status (MockPay usa ambos formatos)
+    const isPaymentSuccess = 
+      webhookData.event === 'payment.succeeded' || 
+      webhookData.status === 'SUCCEEDED';
+
+    const isPaymentFailed = 
+      webhookData.event === 'payment.failed' || 
+      webhookData.status === 'FAILED';
+
+    if (isPaymentSuccess) {
+      console.log(`✅ Pago exitoso para la orden ${orderId}`);
+      return this.prisma.order.update({
+        where: { id: orderId },
+        data: { status: 'PAGADO' },
+      });
+    }
+
+    if (isPaymentFailed) {
+      console.log(`❌ Pago fallido para la orden ${orderId}. Razón: ${webhookData.failure_reason}`);
+      
+      // Revertir el stock si el pago falló para que el producto vuelva a estar disponible
+      const order = await this.prisma.order.findUnique({
+        where: { id: orderId },
+        include: { items: true },
+      });
+
+      if (order) {
+        for (const item of order.items) {
+          await this.prisma.product.update({
+            where: { id: item.productId },
+            data: { stock: { increment: item.quantity } },
+          });
+        }
+      }
+
+      return this.prisma.order.update({
+        where: { id: orderId },
+        data: { status: 'CANCELADO' },
+      });
+    }
+
+    throw new BadRequestException('Evento de webhook no reconocido');
   }
 
   async updateStatus(id: number, updateOrderStatusDto: UpdateOrderStatusDto) {

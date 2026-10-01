@@ -1,38 +1,47 @@
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { ConfigService } from '@nestjs/config';
 import { AppModule } from './app.module';
+import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exception.filter';
+import helmet from 'helmet';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
-  // 1. Validación global de DTOs (transforma y limpia datos)
-  app.useGlobalPipes(
-    new ValidationPipe({
-      whitelist: true,
-      transform: true,
-      forbidNonWhitelisted: true,
-    }),
-  );
+  // 1. Escudo: Helmet (Agrega cabeceras de seguridad HTTP automáticamente)
+  app.use(helmet());
 
-  // 2. Configuración de Swagger UI
+  // 2. Escudo: CORS (Permite peticiones desde el frontend)
+  app.enableCors({
+    origin: '*', // En producción, cambia '*' por la URL real de tu frontend
+    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+    credentials: true,
+  });
+
+  // 3. Validación global de DTOs
+  app.useGlobalPipes(new ValidationPipe({
+    whitelist: true,
+    forbidNonWhitelisted: true,
+    transform: true,
+  }));
+
+  // 4. Filtro Global de Errores de Prisma
+  app.useGlobalFilters(new PrismaClientExceptionFilter());
+
+  // 5. Configuración de Swagger
   const config = new DocumentBuilder()
     .setTitle('POS & E-commerce API')
-    .setDescription('Sistema Híbrido de Punto de Venta y Comercio Electrónico')
+    .setDescription('API para sistema híbrido de Punto de Venta y Tienda Web')
     .setVersion('1.0')
-    .addBearerAuth() // Preparado para cuando activemos los Guards
+    .addBearerAuth()
     .build();
-  
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api/docs', app, document);
 
-  // 3. Puerto dinámico desde ConfigService
-  const configService = app.get(ConfigService);
-  const port = configService.get<number>('PORT') ?? 3000;
-  
+  // 6. Iniciar servidor
+  const port = process.env.PORT || 3000;
   await app.listen(port);
   console.log(`🚀 Application is running on: http://localhost:${port}`);
-  console.log(`📚 Swagger docs: http://localhost:${port}/api/docs`);
 }
+
 bootstrap();

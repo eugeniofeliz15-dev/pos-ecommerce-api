@@ -3,13 +3,15 @@ import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import { PrismaService } from '../prisma/prisma.service';
 import { RegisterDto } from './dto/register.dto';
-import * as bcrypt from 'bcryptjs';
+import { UsersService } from '../users/users.service';
+ import * as bcrypt from 'bcryptjs';
 
 @Injectable()
 export class AuthService {
   constructor(
     private prisma: PrismaService,
     private jwtService: JwtService,
+     private usersService: UsersService,
     private configService: ConfigService,
   ) {}
 
@@ -28,14 +30,19 @@ export class AuthService {
   }
 
   // Método para Passport LocalStrategy
-  async validateUser(email: string, password: string): Promise<any> {
-    const user = await this.prisma.user.findUnique({ where: { email } });
-    if (user && (await bcrypt.compare(password, user.password))) {
-      const { password, ...result } = user;
-      return result;
+ async validateUser(email: string, pass: string): Promise<any> {
+  const user = await this.usersService.findByEmail(email);
+  
+  if (user && await bcrypt.compare(pass, user.password)) {
+    // Verificar que el usuario no esté eliminado
+    if (user.deletedAt) {
+      throw new UnauthorizedException('Usuario inactivo o eliminado');
     }
-    return null;
+    const { password, ...result } = user;
+    return result;
   }
+  return null;
+}
 
   // Método actualizado para recibir el usuario desde el Guard
   async login(user: any) {
@@ -52,4 +59,5 @@ export class AuthService {
       user: { id: user.id, email: user.email, role: user.role },
     };
   }
+  
 }

@@ -29,7 +29,6 @@ export class OrdersController {
     return this.ordersService.findMyOrders(req.user.id);
   }
 
-  // Rutas de Administrador
   @Roles('ADMINISTRADOR')
   @ApiOperation({ summary: 'Ver todos los pedidos (Cola de logística)' })
   @Get()
@@ -43,5 +42,14 @@ export class OrdersController {
   @Patch(':id/status')
   updateStatus(@Param('id') id: string, @Body() updateOrderStatusDto: UpdateOrderStatusDto) {
     return this.ordersService.updateStatus(parseInt(id), updateOrderStatusDto);
+  }
+
+  // --- ENDPOINT PÚBLICO PARA WEBHOOK ---
+  @Post('webhooks/mockpay')
+  @ApiOperation({ summary: 'Webhook público para recibir confirmación de pago de MockPay' })
+  async handleMockPayWebhook(@Body() webhookData: any) {
+    // Este endpoint no tiene guards, cualquiera puede llamarlo, 
+    // pero en producción real validarías una firma secreta de MockPay.
+    return this.ordersService.handlePaymentWebhook(webhookData);
   }
 }

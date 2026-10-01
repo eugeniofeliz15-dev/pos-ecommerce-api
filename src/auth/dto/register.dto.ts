@@ -1,21 +1,27 @@
-import { IsEmail, IsString, MinLength, IsOptional } from 'class-validator';
+import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
+import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 
 export class RegisterDto {
-  @IsEmail({}, { message: 'El correo electrónico no es válido' })
+  @ApiProperty({ example: 'cliente@web.com' })
+  @IsEmail()
   email: string;
 
+  @ApiProperty({ example: 'password123' })
   @IsString()
-  @MinLength(6, { message: 'La contraseña debe tener al menos 6 caracteres' })
+  @MinLength(6)
   password: string;
 
-  @IsOptional()
+  @ApiPropertyOptional({ example: 'Juan' })
   @IsString()
+  @IsOptional()
   firstName?: string;
 
-  @IsOptional()
+  @ApiPropertyOptional({ example: 'Pérez' })
   @IsString()
+  @IsOptional()
   lastName?: string;
 
+  @ApiPropertyOptional({ example: '555-1234' })
   @IsOptional()
   @IsString()
   phone?: string;

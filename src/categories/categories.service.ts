@@ -1,23 +1,48 @@
-import { Injectable, ConflictException } from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateCategoryDto } from './dto/create-category.dto';
+import { UpdateCategoryDto } from './dto/update-category.dto';
 
 @Injectable()
 export class CategoriesService {
   constructor(private prisma: PrismaService) {}
 
   async create(createCategoryDto: CreateCategoryDto) {
-    const existing = await this.prisma.category.findUnique({
-      where: { name: createCategoryDto.name },
+    return this.prisma.category.create({
+      data: createCategoryDto,
     });
-    if (existing) throw new ConflictException('La categoría ya existe');
-
-    return this.prisma.category.create({ data: createCategoryDto });
   }
 
   async findAll() {
     return this.prisma.category.findMany({
-      include: { products: true },
+      where: { deletedAt: null }, // <-- Solo categorías activas
+    });
+  }
+
+  async findOne(id: number) {
+    const category = await this.prisma.category.findUnique({
+      where: { id, deletedAt: null },
+    });
+    if (!category) {
+      throw new NotFoundException(`Categoría con ID ${id} no encontrada`);
+    }
+    return category;
+  }
+
+  async update(id: number, updateCategoryDto: UpdateCategoryDto) {
+    await this.findOne(id);
+    return this.prisma.category.update({
+      where: { id },
+      data: updateCategoryDto,
+    });
+  }
+
+  async remove(id: number) {
+    await this.findOne(id);
+    // SOFT DELETE
+    return this.prisma.category.update({
+      where: { id },
+      data: { deletedAt: new Date() },
     });
   }
 }
