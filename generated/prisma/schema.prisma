@@ -1,0 +1,199 @@
+generator client {
+  provider = "prisma-client-js"
+  output   = "../generated/prisma"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  ADMINISTRADOR
+  CAJERO
+  CLIENTE
+}
+
+enum PaymentMethod {
+  EFECTIVO
+  TARJETA
+  TRANSFERENCIA
+  MOCKPAY
+}
+
+enum OrderStatus {
+  PENDIENTE
+  PAGADO
+  EN_CAMINO
+  ENTREGADO
+  CANCELADO
+}
+
+enum CashRegisterStatus {
+  ABIERTA
+  CERRADA
+}
+
+model User {
+  id        Int      @id @default(autoincrement())
+  email     String   @unique
+  password  String
+  role      Role     @default(CLIENTE)
+  firstName String?
+  lastName  String?
+  phone     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  addresses           Address[]
+  sales               Sale[]
+  orders              Order[]
+  cart                Cart?
+  cashRegistersOpened CashRegister[] @relation("OpenedBy")
+  cashRegistersClosed CashRegister[] @relation("ClosedBy")
+
+  @@map("users")
+}
+
+model Address {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  street    String
+  city      String
+  state     String
+  zipCode   String
+  isDefault Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user   User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@map("addresses")
+}
+
+model Category {
+  id          Int       @id @default(autoincrement())
+  name        String    @unique
+  description String?
+  products    Product[]
+
+  @@map("categories")
+}
+
+model Product {
+  id          Int     @id @default(autoincrement())
+  name        String
+  description String?
+  costPrice   Float
+  salePrice   Float
+  stock       Int     @default(0)
+  categoryId  Int
+
+  category   Category    @relation(fields: [categoryId], references: [id])
+  saleItems  SaleItem[]
+  orderItems OrderItem[]
+  cartItems  CartItem[]
+
+  @@map("products")
+}
+
+model Sale {
+  id            Int           @id @default(autoincrement())
+  cashierId     Int
+  totalAmount   Float
+  paymentMethod PaymentMethod
+  createdAt     DateTime      @default(now())
+
+  cashier User       @relation(fields: [cashierId], references: [id])
+  items   SaleItem[]
+
+  @@map("sales")
+}
+
+model SaleItem {
+  id        Int   @id @default(autoincrement())
+  saleId    Int
+  productId Int
+  quantity  Int
+  unitPrice Float
+  subtotal  Float
+
+  sale    Sale    @relation(fields: [saleId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("sale_items")
+}
+
+model Order {
+  id          Int         @id @default(autoincrement())
+  customerId  Int
+  addressId   Int
+  totalAmount Float
+  status      OrderStatus @default(PENDIENTE)
+  notes       String?
+  createdAt   DateTime    @default(now())
+  updatedAt   DateTime    @updatedAt
+
+  customer User        @relation(fields: [customerId], references: [id])
+  address  Address     @relation(fields: [addressId], references: [id])
+  items    OrderItem[]
+
+  @@map("orders")
+}
+
+model OrderItem {
+  id        Int   @id @default(autoincrement())
+  orderId   Int
+  productId Int
+  quantity  Int
+  unitPrice Float
+  subtotal  Float
+
+  order   Order   @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("order_items")
+}
+
+model Cart {
+  id         Int      @id @default(autoincrement())
+  customerId Int      @unique
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  customer User       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  items    CartItem[]
+
+  @@map("carts")
+}
+
+model CartItem {
+  id        Int @id @default(autoincrement())
+  cartId    Int
+  productId Int
+  quantity  Int
+
+  cart    Cart    @relation(fields: [cartId], references: [id], onDelete: Cascade)
+  product Product @relation(fields: [productId], references: [id])
+
+  @@map("cart_items")
+}
+
+// --- NUEVA TABLA: FLUJO DE CAJA ---
+model CashRegister {
+  id              Int                @id @default(autoincrement())
+  openedById      Int
+  closedById      Int?
+  openingBalance  Float              @default(0)
+  closingBalance  Float?
+  expectedBalance Float?
+  difference      Float?
+  status          CashRegisterStatus @default(ABIERTA)
+  openedAt        DateTime           @default(now())
+  closedAt        DateTime?
+
+  openedBy User  @relation("OpenedBy", fields: [openedById], references: [id])
+  closedBy User? @relation("ClosedBy", fields: [closedById], references: [id])
+
+  @@map("cash_registers")
+}
