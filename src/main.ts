@@ -1,47 +1,51 @@
-import { NestFactory } from '@nestjs/core';
-import { ValidationPipe } from '@nestjs/common';
-import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
-import { AppModule } from './app.module';
-import { PrismaClientExceptionFilter } from './common/filters/prisma-client-exception.filter';
-import helmet from 'helmet';
+import { Module } from '@nestjs/common';
+import { ConfigModule } from '@nestjs/config';
+import { ThrottlerModule, ThrottlerGuard } from '@nestjs/throttler';
+import { APP_GUARD } from '@nestjs/core';
+import { PrismaModule } from './prisma/prisma.module';
+import { AuthModule } from './auth/auth.module';
+import { UsersModule } from './users/users.module';
+import { ProductsModule } from './products/products.module';
+import { SalesModule } from './sales/sales.module';
+import { OrdersModule } from './orders/orders.module';
+import { CartModule } from './cart/cart.module';
+import { CashRegisterModule } from './cash-register/cash-register.module';
+import { CategoriesModule } from './categories/categories.module'; // ← AGREGA ESTA LÍNEA
+import { CommonModule } from './common/common.module';
+import { validationSchema } from './env.validation';
 
-async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+@Module({
+  imports: [
+    // 1. Validación de .env con Joi
+    ConfigModule.forRoot({
+      isGlobal: true,
+      validationSchema: validationSchema,
+    }),
 
-  // 1. Escudo: Helmet (Agrega cabeceras de seguridad HTTP automáticamente)
-  app.use(helmet());
+    // 2. Rate Limiting: Máximo 60 peticiones cada 60 segundos por IP
+    ThrottlerModule.forRoot([{
+      ttl: 60000,
+      limit: 60,
+    }]),
 
-  // 2. Escudo: CORS (Permite peticiones desde el frontend)
-  app.enableCors({
-    origin: '*', // En producción, cambia '*' por la URL real de tu frontend
-    methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
-    credentials: true,
-  });
-
-  // 3. Validación global de DTOs
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true,
-  }));
-
-  // 4. Filtro Global de Errores de Prisma
-  app.useGlobalFilters(new PrismaClientExceptionFilter());
-
-  // 5. Configuración de Swagger
-  const config = new DocumentBuilder()
-    .setTitle('POS & E-commerce API')
-    .setDescription('API para sistema híbrido de Punto de Venta y Tienda Web')
-    .setVersion('1.0')
-    .addBearerAuth()
-    .build();
-  const document = SwaggerModule.createDocument(app, config);
-  SwaggerModule.setup('api/docs', app, document);
-
-  // 6. Iniciar servidor
-const port = process.env.PORT || 10000;
-await app.listen(port, '0.0.0.0');
-console.log(`🚀 Application is running on: http://0.0.0.0:${port}`);
-}
-
-bootstrap();
+    // Módulos de la aplicación
+    PrismaModule,
+    AuthModule,
+    UsersModule,
+    ProductsModule,
+    SalesModule,
+    OrdersModule,
+    CartModule,
+    CashRegisterModule,
+    CategoriesModule, // ← AGREGA ESTA LÍNEA AQUÍ
+    CommonModule,
+  ],
+  providers: [
+    // 3. Aplicar el Rate Limiting globalmente
+    {
+      provide: APP_GUARD,
+      useClass: ThrottlerGuard,
+    },
+  ],
+})
+export class AppModule {}
