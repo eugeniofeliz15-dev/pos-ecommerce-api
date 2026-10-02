@@ -12,6 +12,7 @@ import { CartModule } from './cart/cart.module';
 import { CashRegisterModule } from './cash-register/cash-register.module';
 import { CommonModule } from './common/common.module';
 import { validationSchema } from './env.validation';
+//import { CategoriesModule } from './categories/categories.module';
 
 @Module({
   imports: [
@@ -29,6 +30,7 @@ import { validationSchema } from './env.validation';
 
     // Módulos de la aplicación
     PrismaModule,
+    //CategoriesModule,
     AuthModule,
     UsersModule,
     ProductsModule,
