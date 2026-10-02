@@ -7,7 +7,7 @@ import { CashRegisterService } from './cash-register.service';
 import { OpenCashRegisterDto } from './dto/open-cash-register.dto';
 import { CloseCashRegisterDto } from './dto/close-cash-register.dto';
 
-@ApiTags('Cash Register (Caja)')
+@ApiTags('Cash Register')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('cash-register')

@@ -7,7 +7,7 @@ import { SalesService } from './sales.service';
 import { CreateSaleDto } from './dto/create-sale.dto';
 import { PaginationDto } from '../common/pagination.dto';
 
-@ApiTags('Sales (POS)')
+@ApiTags('Sales')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Controller('sales')

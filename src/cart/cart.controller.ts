@@ -6,7 +6,7 @@ import { Roles } from '../auth/decorators/roles.decorator';
 import { CartService } from './cart.service';
 import { AddToCartDto } from './dto/add-to-cart.dto';
 
-@ApiTags('Cart (E-commerce)')
+@ApiTags('Cart')
 @ApiBearerAuth()
 @UseGuards(JwtAuthGuard, RolesGuard)
 @Roles('CLIENTE') // Solo clientes web usan el carrito
