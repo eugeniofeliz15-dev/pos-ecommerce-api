@@ -25,9 +25,9 @@ Puedes usar estos usuarios para probar los diferentes roles en el endpoint `/aut
 
 | Rol | Email | Contraseña |
 | :--- | :--- | :--- |
-| **Administrador** | `admin@tienda.com` | `Admin123!` |
-| **Cajero** | `cajero@tienda.com` | `Cajero123!` |
-| **Cliente** | `cliente@tienda.com` | `Cliente123!` |
+| **Administrador** | `admin@demo.com` | `Admin123!` |
+| **Cajero** | `cajero@demo.com` | `Cajero123!` |
+| **Cliente** | `cliente@demo.com` | `Client123!` |
 
 ## ⚙️ Instalación Local
 1. Clona el repositorio: `git clone https://github.com/eugeniofeliz15-dev/pos-ecommerce-api.git`
