@@ -18,7 +18,7 @@ API RESTful robusta y escalable para un sistema híbrido de Punto de Venta (POS)
 
 ## 🌍 API en Producción
 La API está desplegada y disponible 24/7 en:
-👉 **[https://pos-ecommerce-api.onrender.com/api/docs]*
+👉 **[https://pos-ecommerce-api-24lq.onrender.com/api/docs]*
 
 ## 🔑 Credenciales de Prueba
 Puedes usar estos usuarios para probar los diferentes roles en el endpoint `/auth/login`:
