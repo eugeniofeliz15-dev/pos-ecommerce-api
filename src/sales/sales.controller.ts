@@ -16,7 +16,19 @@ export class SalesController {
 
   @Roles('ADMINISTRADOR', 'CAJERO')
   @ApiOperation({ summary: 'Procesar una venta de mostrador (POS)' })
-  @ApiBody({ type: CreateSaleDto })
+  @ApiBody({
+    type: CreateSaleDto,
+    examples: {
+      default: {
+        summary: 'Venta POS en efectivo',
+        value: { 
+          items: [{ productId: 1, quantity: 1 }], 
+          paymentMethod: 'EFECTIVO',
+          cashReceived: 60000 
+        }
+      }
+    }
+  })
   @Post()
   create(@Body() createSaleDto: CreateSaleDto, @Req() req: any) {
     return this.salesService.create(createSaleDto, req.user.id);

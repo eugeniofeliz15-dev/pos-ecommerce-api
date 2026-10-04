@@ -46,7 +46,15 @@ export class ProductsController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMINISTRADOR')
   @ApiOperation({ summary: 'Crear producto (Solo Admin)' })
-  @ApiBody({ type: CreateProductDto })
+  @ApiBody({
+    type: CreateProductDto,
+    examples: {
+      default: {
+        summary: 'Nuevo producto',
+        value: { name: 'Teclado Mecánico', description: 'RGB, Switches Red', costPrice: 2000, salePrice: 3500, stock: 50, categoryId: 1 }
+      }
+    }
+  })
   @Post()
   create(@Body() createProductDto: CreateProductDto) {
     return this.productsService.create(createProductDto);
@@ -58,7 +66,15 @@ export class ProductsController {
   @Roles('ADMINISTRADOR')
   @ApiOperation({ summary: 'Actualizar producto (Solo Admin)' })
   @ApiParam({ name: 'id', example: 1 })
-  @ApiBody({ type: UpdateProductDto })
+  @ApiBody({
+    type: UpdateProductDto,
+    examples: {
+      default: {
+        summary: 'Actualizar stock o precio',
+        value: { salePrice: 3200, stock: 45 }
+      }
+    }
+  })
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
     return this.productsService.update(parseInt(id), updateProductDto);

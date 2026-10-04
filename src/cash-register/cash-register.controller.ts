@@ -16,7 +16,15 @@ export class CashRegisterController {
 
   @Roles('ADMINISTRADOR', 'CAJERO')
   @ApiOperation({ summary: 'Abrir caja (Registrar monto inicial)' })
-  @ApiBody({ type: OpenCashRegisterDto })
+  @ApiBody({
+    type: OpenCashRegisterDto,
+    examples: {
+      default: {
+        summary: 'Apertura de caja',
+        value: { initialAmount: 5000, notes: 'Caja principal del turno mañana' }
+      }
+    }
+  })
   @Post('open')
   open(@Body() openDto: OpenCashRegisterDto, @Req() req: any) {
     return this.cashRegisterService.open(req.user.id, openDto);
@@ -24,7 +32,15 @@ export class CashRegisterController {
 
   @Roles('ADMINISTRADOR')
   @ApiOperation({ summary: 'Cerrar caja y conciliar efectivo' })
-  @ApiBody({ type: CloseCashRegisterDto })
+  @ApiBody({
+    type: CloseCashRegisterDto,
+    examples: {
+      default: {
+        summary: 'Cierre de caja',
+        value: { finalAmount: 60500, notes: 'Cierre sin novedades, efectivo cuadrado' }
+      }
+    }
+  })
   @Post('close')
   close(@Body() closeDto: CloseCashRegisterDto, @Req() req: any) {
     return this.cashRegisterService.close(req.user.id, closeDto);

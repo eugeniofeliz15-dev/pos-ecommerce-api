@@ -15,7 +15,15 @@ export class UsersController {
 
   @Roles('ADMINISTRADOR')
   @ApiOperation({ summary: 'Crear usuario (Solo Admin)' })
-  @ApiBody({ type: CreateUserDto })
+  @ApiBody({
+    type: CreateUserDto,
+    examples: {
+      cajero: {
+        summary: 'Crear usuario Cajero',
+        value: { email: 'cajero2@demo.com', password: 'Cajero123!', firstName: 'Pedro', lastName: 'López', phone: '8095559999', role: 'CAJERO' }
+      }
+    }
+  })
   @Post()
   create(@Body() createUserDto: CreateUserDto) {
     return this.usersService.create(createUserDto);

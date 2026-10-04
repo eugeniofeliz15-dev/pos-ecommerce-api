@@ -29,7 +29,18 @@ export class CategoriesController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles('ADMINISTRADOR')
   @ApiOperation({ summary: 'Crear categoría (Solo Admin)' })
-  @ApiBody({ type: CreateCategoryDto })
+  @ApiBody({
+    type: CreateCategoryDto,
+    examples: {
+      default: {
+        summary: 'Ejemplo de categoría',
+        value: {
+          name: 'Electrónica',
+          description: 'Productos tecnológicos y gadgets',
+        }
+      }
+    }
+  })
   @Post()
   create(@Body() createCategoryDto: CreateCategoryDto) {
     return this.categoriesService.create(createCategoryDto);
@@ -39,7 +50,18 @@ export class CategoriesController {
   @Roles('ADMINISTRADOR')
   @ApiOperation({ summary: 'Actualizar categoría (Solo Admin)' })
   @ApiParam({ name: 'id', type: Number })
-  @ApiBody({ type: UpdateCategoryDto })
+  @ApiBody({
+    type: UpdateCategoryDto,
+    examples: {
+      default: {
+        summary: 'Ejemplo de actualización',
+        value: {
+          name: 'Electrónica y Tecnología',
+          description: 'Actualizado: Productos tecnológicos, gadgets y accesorios',
+        }
+      }
+    }
+  })
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateCategoryDto: UpdateCategoryDto) {
     return this.categoriesService.update(+id, updateCategoryDto);

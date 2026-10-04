@@ -16,7 +16,15 @@ export class OrdersController {
 
    @Roles('CLIENTE')
   @ApiOperation({ summary: 'Checkout exclusivo con MockPay (Genera URL de pago)' })
-  @ApiBody({ type: CreateOrderDto })
+  @ApiBody({
+    type: CreateOrderDto,
+    examples: {
+      default: {
+        summary: 'Checkout con MockPay',
+        value: { addressId: 1, paymentMethod: 'MOCKPAY', notes: 'Entregar en recepción' }
+      }
+    }
+  })
   @Post('checkout-mockpay')
   async checkoutMockPay(@Body() createOrderDto: CreateOrderDto, @Req() req: any) {
     return this.ordersService.checkoutMockPay(req.user.id, createOrderDto);
@@ -38,7 +46,15 @@ export class OrdersController {
 
   @Roles('ADMINISTRADOR')
   @ApiOperation({ summary: 'Actualizar estado del pedido (Logística)' })
-  @ApiBody({ type: UpdateOrderStatusDto })
+  @ApiBody({
+    type: UpdateOrderStatusDto,
+    examples: {
+      default: {
+        summary: 'Marcar como enviado',
+        value: { status: 'ENVIADO' }
+      }
+    }
+  })
   @Patch(':id/status')
   updateStatus(@Param('id') id: string, @Body() updateOrderStatusDto: UpdateOrderStatusDto) {
     return this.ordersService.updateStatus(parseInt(id), updateOrderStatusDto);
@@ -65,4 +81,4 @@ export class OrdersController {
   async handleMockPayWebhook(@Body() webhookData: any) {
     return this.ordersService.handlePaymentWebhook(webhookData);
   }
-  }
+}

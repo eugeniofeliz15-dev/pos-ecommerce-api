@@ -21,7 +21,18 @@ export class CartController {
   }
 
   @ApiOperation({ summary: 'Agregar producto al carrito' })
-  @ApiBody({ type: AddToCartDto })
+  @ApiBody({
+    type: AddToCartDto,
+    examples: {
+      default: {
+        summary: 'Agregar producto al carrito',
+        value: {
+          productId: 1,
+          quantity: 2,
+        }
+      }
+    }
+  })
   @Post('add')
   addToCart(@Body() addToCartDto: AddToCartDto, @Req() req: any) {
     return this.cartService.addToCart(req.user.id, addToCartDto);
