@@ -89,7 +89,13 @@ export class OrdersService {
   }
 
   // ✅ MÉTODO CORREGIDO PARA COINCIDIR CON LA DOCUMENTACIÓN REAL DE MOCKPAY
-  async handlePaymentWebhook(webhookData: any) {
+ async handlePaymentWebhook(webhookData: any) {
+    // 👇 AGREGAR ESTA VALIDACIÓN AL INICIO
+    if (!webhookData || Object.keys(webhookData).length === 0) {
+      console.log('⚠️ Webhook recibido sin datos');
+      throw new BadRequestException('No se recibieron datos del webhook');
+    }
+
     console.log('🔔 Webhook recibido de MockPay:', JSON.stringify(webhookData, null, 2));
 
     // MockPay envía el order_id DENTRO de metadata
