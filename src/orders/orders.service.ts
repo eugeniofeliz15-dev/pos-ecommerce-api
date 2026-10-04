@@ -12,6 +12,9 @@ export class OrdersService {
   ) {}
 
   async checkout(customerId: number, createOrderDto: CreateOrderDto) {
+    // 👇 1. OBTENER EL EMAIL DEL CLIENTE (Nuevo)
+    const customer = await this.prisma.user.findUnique({ where: { id: customerId } });
+
     const cart = await this.prisma.cart.findUnique({
       where: { customerId },
       include: { items: { include: { product: true } } },
@@ -74,7 +77,8 @@ export class OrdersService {
     if (createOrderDto.paymentMethod === PaymentMethodOrder.MOCKPAY) {
       checkoutUrl = await this.mockPayService.createPayment(
         order.totalAmount,
-        `ORD-${order.id}`
+        `ORD-${order.id}`,
+        customer?.email || 'cliente@ejemplo.com' // 👈 2. AGREGADO EL 3ER ARGUMENTO
       );
     }
 
@@ -171,7 +175,8 @@ export class OrdersService {
       orderBy: { createdAt: 'desc' },
     });
   }
-    // ✅ NUEVO MÉTODO: Checkout exclusivo para MockPay
+
+  // ✅ NUEVO MÉTODO: Checkout exclusivo para MockPay
   async checkoutMockPay(customerId: number, createOrderDto: CreateOrderDto) {
     const customer = await this.prisma.user.findUnique({ where: { id: customerId } });
     

@@ -8,9 +8,9 @@ export class MockPayService {
   private readonly webhookUrl: string;
 
   constructor(private readonly configService: ConfigService) {
-    this.apiUrl = this.configService.get<string>('MOCKPAY_API_URL');
-    this.secretKey = this.configService.get<string>('MOCKPAY_SECRET_KEY');
-    this.webhookUrl = this.configService.get<string>('MOCKPAY_WEBHOOK_URL');
+    this.apiUrl = this.configService.get<string>('MOCKPAY_API_URL') || '';
+    this.secretKey = this.configService.get<string>('MOCKPAY_SECRET_KEY') || '';
+    this.webhookUrl = this.configService.get<string>('MOCKPAY_WEBHOOK_URL') || '';
   }
 
   async createPayment(amount: number, orderId: string, customerEmail: string) {
