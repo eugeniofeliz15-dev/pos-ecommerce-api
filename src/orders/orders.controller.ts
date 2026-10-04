@@ -47,9 +47,22 @@ export class OrdersController {
   // --- ENDPOINT PÚBLICO PARA WEBHOOK ---
   @Post('webhooks/mockpay')
   @ApiOperation({ summary: 'Webhook público para recibir confirmación de pago de MockPay' })
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: {
+        event: { type: 'string', example: 'payment.succeeded' },
+        status: { type: 'string', example: 'SUCCEEDED' },
+        metadata: {
+          type: 'object',
+          properties: {
+            order_id: { type: 'string', example: 'ORD-5' }
+          }
+        }
+      }
+    }
+  })
   async handleMockPayWebhook(@Body() webhookData: any) {
-    // Este endpoint no tiene guards, cualquiera puede llamarlo, 
-    // pero en producción real validarías una firma secreta de MockPay.
     return this.ordersService.handlePaymentWebhook(webhookData);
   }
-}
+  }
