@@ -171,4 +171,78 @@ export class OrdersService {
       orderBy: { createdAt: 'desc' },
     });
   }
+    // ✅ NUEVO MÉTODO: Checkout exclusivo para MockPay
+  async checkoutMockPay(customerId: number, createOrderDto: CreateOrderDto) {
+    const customer = await this.prisma.user.findUnique({ where: { id: customerId } });
+    
+    const cart = await this.prisma.cart.findUnique({
+      where: { customerId },
+      include: { items: { include: { product: true } } },
+    });
+
+    if (!cart || cart.items.length === 0) {
+      throw new BadRequestException('El carrito está vacío');
+    }
+
+    const order = await this.prisma.$transaction(async (tx) => {
+      let totalAmount = 0;
+      const orderItemsData = [];
+
+      for (const item of cart.items) {
+        if (item.product.stock < item.quantity) {
+          throw new BadRequestException(
+            `Stock insuficiente para "${item.product.name}". Disponible: ${item.product.stock}`
+          );
+        }
+        
+        const subtotal = item.product.salePrice * item.quantity;
+        totalAmount += subtotal;
+
+        orderItemsData.push({
+          productId: item.productId,
+          quantity: item.quantity,
+          unitPrice: item.product.salePrice,
+          subtotal: subtotal,
+        });
+      }
+
+      const newOrder = await tx.order.create({
+        data: {
+          customerId,
+          addressId: createOrderDto.addressId,
+          totalAmount,
+          notes: createOrderDto.notes,
+          status: 'PENDIENTE',
+          items: { create: orderItemsData },
+        },
+        include: {
+          items: { include: { product: true } },
+          address: true,
+        },
+      });
+
+      for (const item of cart.items) {
+        await tx.product.update({
+          where: { id: item.productId },
+          data: { stock: { decrement: item.quantity } },
+        });
+      }
+
+      await tx.cartItem.deleteMany({ where: { cartId: cart.id } });
+      return newOrder;
+    });
+
+    // Generamos la URL de pago con MockPay
+    const checkoutUrl = await this.mockPayService.createPayment(
+      order.totalAmount,
+      `ORD-${order.id}`,
+      customer?.email || 'cliente@ejemplo.com'
+    );
+
+    return {
+      order,
+      checkout_url: checkoutUrl,
+      message: 'Orden creada exitosamente. Redirige al cliente a checkout_url para completar el pago.'
+    };
+  }
 }

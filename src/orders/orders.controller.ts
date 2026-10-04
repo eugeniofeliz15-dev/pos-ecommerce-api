@@ -14,12 +14,12 @@ import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 export class OrdersController {
   constructor(private readonly ordersService: OrdersService) {}
 
-  @Roles('CLIENTE')
-  @ApiOperation({ summary: 'Confirmar pedido (Checkout desde el carrito)' })
+   @Roles('CLIENTE')
+  @ApiOperation({ summary: 'Checkout exclusivo con MockPay (Genera URL de pago)' })
   @ApiBody({ type: CreateOrderDto })
-  @Post('checkout')
-  checkout(@Body() createOrderDto: CreateOrderDto, @Req() req: any) {
-    return this.ordersService.checkout(req.user.id, createOrderDto);
+  @Post('checkout-mockpay')
+  async checkoutMockPay(@Body() createOrderDto: CreateOrderDto, @Req() req: any) {
+    return this.ordersService.checkoutMockPay(req.user.id, createOrderDto);
   }
 
   @Roles('CLIENTE')
